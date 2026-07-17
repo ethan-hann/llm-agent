@@ -12,7 +12,7 @@ def get_files_info(working_directory: str, directory: str = ".") -> str:
         if not os.path.isdir(target_dir):
             return f'Error: "{directory}" is not a directory'
         
-        file_records: list[dict[str, str]] = []
+        file_records: list[dict[str, object]] = []
         file_list = os.listdir(target_dir)
         for file in file_list:
             abs_path = os.path.normpath(os.path.join(target_dir, file))
