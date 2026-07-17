@@ -2,6 +2,7 @@ import os
 from config import MAX_CHARS
 
 def get_file_content(working_directory: str, file_path: str) -> str:
+    """Return the content of the specified file within the working directory, truncated to MAX_CHARS."""
     try:
         working_dir_abs = os.path.abspath(working_directory)
         target_file_path = os.path.normpath(os.path.join(working_dir_abs, file_path))        

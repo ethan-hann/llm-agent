@@ -1,6 +1,5 @@
 import os
 import argparse
-import json
 from dotenv import load_dotenv
 from openai import OpenAI
 from prompts import system_prompt
@@ -31,6 +30,25 @@ def valid_tool_calls(message):
     if not message.tool_calls:
         return True
     return all(tc.function.name in known for tc in message.tool_calls)
+
+def get_valid_response(client, messages, max_rerolls=5, verbose=False):
+    """One model turn. If the free router returns malformed tool calls, re-roll
+    (same messages, nothing executed yet, so this is safe to repeat). Returns
+    (response, message) once a usable one comes back."""
+    for attempt in range(1, max_rerolls + 1):
+        response = generate_content(client, messages)
+        if not response.usage:
+            raise RuntimeError("Response from AI was empty!")
+        message = response.choices[0].message
+        if valid_tool_calls(message):
+            return response, message
+        if verbose:
+            bad = [tc.function.name for tc in message.tool_calls]
+            print(f"  (re-roll {attempt}: free router returned unknown function(s) {bad})")
+    raise RuntimeError(
+        f"Free router returned malformed tool calls on all {max_rerolls} attempts. "
+        "Re-run the command (the router picks a different model each time)."
+    )
     
 def main():
     if not api_key:
@@ -43,40 +61,30 @@ def main():
     ]
     
     client = OpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key)
-    max_attempts = 5
-    response = None
-    message = None
-    for attempt in range(1, max_attempts + 1):
-        response = generate_content(client, messages)
-        if not response.usage:
-            raise RuntimeError("Response from AI was empty!")
-        message = response.choices[0].message
-        if valid_tool_calls(message):
-            break
+
+    max_iterations = 20
+    for _ in range(1, max_iterations + 1):
+        response, message = get_valid_response(client, messages, verbose=args.verbose) # Inner retry: one usable model call per feedback turn.
         if args.verbose:
-            bad = [tc.function.name for tc in message.tool_calls] # type: ignore
-            print(f"Attempt {attempt}: free router returned unknown function(s) {bad}, re-rolling...")
-    else:
-        raise RuntimeError(
-            f"Free router returned malformed tool calls on all {max_attempts} attempts. "
-            "Re-run the command (the router picks a different model each time)."
-        )
+            print(f"User prompt: {args.user_prompt}")
+            print(f"Prompt tokens: {response.usage.prompt_tokens}")
+            print(f"Response tokens: {response.usage.completion_tokens}")
 
-    if args.verbose:
-        print(f"User prompt: {args.user_prompt}")
-        print(f"Prompt tokens: {response.usage.prompt_tokens}")
-        print(f"Response tokens: {response.usage.completion_tokens}")
+        if not message.tool_calls: # No tool calls = the model gave a final text answer. Done.
+            print(message.content)
+            break
 
-    tool_calls = message.tool_calls
-    if tool_calls:
-        for tool_call in tool_calls:
+        messages.append(message) # Record the assistant's turn (with its tool_calls) BEFORE the results.
+
+        for tool_call in message.tool_calls:
             result_message = call_function(tool_call, args.verbose)
             if len(result_message["content"]) == 0:
                 raise RuntimeError("Response from tool call was empty")
             if args.verbose:
                 print(f"-> {result_message['content']}")
+            messages.append(result_message) # Feed the result back so the next iteration can react to it.
     else:
-        print(message.content)
+        print(f"Reached max iterations ({max_iterations}) without a final response.")
+        exit(1)
     
-if __name__ == "__main__":
-    main()
+main()

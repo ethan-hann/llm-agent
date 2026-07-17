@@ -2,6 +2,7 @@ import os
 import subprocess
 
 def run_python_file(working_directory: str, file_path: str, args: list[str] | None = None) -> str:
+    """Execute the specified Python file within the working directory with optional arguments and return the output."""
     try:
         working_dir_abs = os.path.abspath(working_directory)
         target_file = os.path.normpath(os.path.join(working_dir_abs, file_path))

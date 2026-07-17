@@ -1,6 +1,7 @@
 import os
 
 def get_files_info(working_directory: str, directory: str = ".") -> str:
+    """Return information about the files in the specified directory within the working directory."""
     try:
         working_dir_abs = os.path.abspath(working_directory)
         target_dir = os.path.normpath(os.path.join(working_dir_abs, directory))

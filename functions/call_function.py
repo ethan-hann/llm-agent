@@ -141,6 +141,7 @@ schema_run_python_file = {
 }
 
 def get_schemas() -> list[dict[str, dict[str, object]]]:
+    """Return a list of all function schemas."""
     return [
         schema_get_file_content,
         schema_get_files_info,
@@ -149,6 +150,7 @@ def get_schemas() -> list[dict[str, dict[str, object]]]:
     ]
 
 def call_function(tool_call, verbose: bool = False) -> dict:
+    """Call the specified function with the given arguments and return the result as a dictionary."""
     function_map: dict[str, Callable[..., str]] = {
         "get_file_content": get_file_content,
         "get_files_info": get_files_info,
@@ -169,11 +171,10 @@ def call_function(tool_call, verbose: bool = False) -> dict:
             "tool_call_id": tool_call.id,
             "content": f"Error: Unknown function: {function_name}",
         }
-    # Set working directory
-    function_args["working_directory"] = "./calculator"
     
-    # Call the function
-    result = function_map[function_name](**function_args)
+    function_args["working_directory"] = "./calculator" # Set working directory
+    result = function_map[function_name](**function_args) # Call the function and store result (just a string)
+    
     return {
         "role": "tool",
         "tool_call_id": tool_call.id,
