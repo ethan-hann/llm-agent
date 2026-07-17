@@ -116,6 +116,17 @@ Example prompts:
 - `"create a new README.md file with the contents '# calculator'"`
 - `"what does the calculator do? explain how it works"`
 
+## Configuration
+You can configure the max number of characters that the LLM reads from a file as well as the static working directory the agent should use. These are defined in the `config.py` file:
+
+```python
+MAX_CHARS = 10000
+WORKING_DIRECTORY = "./calculator"
+```
+
+> [!WARNING]
+> The `WORKING_DIRECTORY` should be set to a directory you don't care about. See the [Safety Notes](#safety-notes) below for more info.
+
 ## Running the tests
 
 Each tool has a standalone test module:
@@ -141,7 +152,8 @@ included `calculator/` app), not something you care about.
 
 The working directory is hard-coded in `main.py` with this line:
 ```python
-function_args["working_directory"] = "./calculator"
+# Set working directory (defined in config.py)
+function_args["working_directory"] = WORKING_DIRECTORY
 ```
 
 ## Acknowledgements

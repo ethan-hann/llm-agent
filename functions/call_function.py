@@ -4,6 +4,7 @@ from functions.get_file_content import get_file_content
 from functions.get_files_info import get_files_info
 from functions.run_python_file import run_python_file
 from functions.write_file import write_file
+from config import WORKING_DIRECTORY
 
 schema_get_files_info = {
     "type": "function",
@@ -172,7 +173,7 @@ def call_function(tool_call, verbose: bool = False) -> dict:
             "content": f"Error: Unknown function: {function_name}",
         }
     
-    function_args["working_directory"] = "./calculator" # Set working directory
+    function_args["working_directory"] = WORKING_DIRECTORY # Set working directory (defined in config.py)
     result = function_map[function_name](**function_args) # Call the function and store result (just a string)
     
     return {
