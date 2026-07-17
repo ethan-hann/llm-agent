@@ -150,12 +150,6 @@ That said, this is a learning project. The agent can write files and execute
 Python within its sandbox, so point it at a throwaway directory (like the
 included `calculator/` app), not something you care about.
 
-The working directory is hard-coded in `main.py` with this line:
-```python
-# Set working directory (defined in config.py)
-function_args["working_directory"] = WORKING_DIRECTORY
-```
-
 ## Acknowledgements
 
 Built following the [Boot.dev "Build an AI Agent in Python" course](https://www.boot.dev/courses/build-ai-agent-python) (with some improvements; mainly the model-retry loop in `main.py`).
