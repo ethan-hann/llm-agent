@@ -1,3 +1,10 @@
+import json
+from collections.abc import Callable
+from functions.get_file_content import get_file_content
+from functions.get_files_info import get_files_info
+from functions.run_python_file import run_python_file
+from functions.write_file import write_file
+
 schema_get_files_info = {
     "type": "function",
     "function": {
@@ -6,7 +13,7 @@ schema_get_files_info = {
             "Lists the contents of a directory within the permitted working directory. "
             "For each entry it returns the name, the size in bytes, and whether the entry "
             "is itself a directory (as opposed to a regular file). Use this to explore or "
-            "map out the project's structure before acting on it \u2014 for example, to "
+            "map out the project's structure before acting on it. For example, to "
             "discover which files exist before reading, editing, or running one. The target "
             "directory must resolve to a location inside the working directory; any path that "
             "escapes it is rejected. Omitting the 'directory' argument lists the top level of "
@@ -27,7 +34,6 @@ schema_get_files_info = {
         },
     },
 }
-
 schema_get_file_content = {
     "type": "function",
     "function": {
@@ -55,7 +61,6 @@ schema_get_file_content = {
         },
     },
 }
-
 schema_write_file = {
     "type": "function",
     "function": {
@@ -93,7 +98,6 @@ schema_write_file = {
         },
     },
 }
-
 schema_run_python_file = {
     "type": "function",
     "function": {
@@ -136,11 +140,42 @@ schema_run_python_file = {
     },
 }
 
-
-def get_schemas() -> list[dict[str, object]]:
+def get_schemas() -> list[dict[str, dict[str, object]]]:
     return [
         schema_get_file_content,
         schema_get_files_info,
         schema_run_python_file,
         schema_write_file,
     ]
+
+def call_function(tool_call, verbose: bool = False) -> dict:
+    function_map: dict[str, Callable[..., str]] = {
+        "get_file_content": get_file_content,
+        "get_files_info": get_files_info,
+        "write_file": write_file,
+        "run_python_file": run_python_file
+    }
+    
+    function_name = tool_call.function.name
+    function_args = json.loads(tool_call.function.arguments or "{}")
+    if verbose:
+        print(f" - Calling function: {function_name}({function_args})")
+    else:
+        print(f" - Calling function: {function_name}")
+    
+    if function_name not in function_map:
+        return {
+            "role": "tool",
+            "tool_call_id": tool_call.id,
+            "content": f"Error: Unknown function: {function_name}",
+        }
+    # Set working directory
+    function_args["working_directory"] = "./calculator"
+    
+    # Call the function
+    result = function_map[function_name](**function_args)
+    return {
+        "role": "tool",
+        "tool_call_id": tool_call.id,
+        "content": result,
+    }
